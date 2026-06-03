@@ -1,40 +1,40 @@
-# AI教育网关 - 完整实施方案
+# AI教育网关
 
-本文档完整说明如何将"基于大模型智慧教育管家解决方案"落地为
-一个可放在用户家中的网络流量管理设备（AI教育网关）。
+N100双网口软路由 + OpenWrt(nDPI) + Qwen2.5-3B本地大模型 + Gradio Web
 
-## 一、产品定位
-- 产品形态：智能路由器网关（硬件设备）
-- 目标价格：499-999元
-- 目标用户：有6-18岁孩子的家庭
-- 核心价值：AI驱动的网络管控 + 个性化教育管家
+**家庭网络AI流量管理与智慧教育管家**
 
-## 二、技术架构
+## 整体架构
 
-### 2.1 硬件层
-| 方案 | 成本 | 适用阶段 |
-|------|------|----------|
-| 树莓派5 (8GB) + USB网卡 | ~600元 | 原型验证 |
-| RK3588开发板 (Orange Pi 5) | ~500元 | MVP测试 |
-| x86软路由 (N100) | ~800元 | 性能测试 |
-| 定制ARM主板 (RK3588定制) | ~200元(BOM) | 量产 |
-
-### 2.2 软件栈
-- 操作系统：OpenWrt（路由）+ Ubuntu Container（AI服务）
-- 流量识别：nDPI (ntop开源)
-- DNS过滤：DNSMASQ + 自定义规则
-- AI引擎：Qwen2.5-7B-Q4 (本地运行，无需联网)
-- Web管理：Gradio / Vue.js
-- 数据存储：SQLite (本地轻量)
-
-### 2.3 部署方式
-用户只需将设备插在光猫和家庭路由器之间：
 ```
-光猫 → AI教育网关 → 家庭路由器 → 各设备
-        (透明网桥模式)
+光猫 ──→ N100 eth0(WAN) ── PVE虚拟机 ──→ eth1(LAN) ──→ 家中WiFi(AP模式)
+             │                                 │
+         ┌───┴───┐                       [各设备上网]
+         │ VM1:  │
+         │OpenWrt│ ── nDPI识别抖音/王者/学而思 → HTTP JSON接口(:8080)
+         └───┬───┘
+             │ 虚拟网桥通信
+         ┌───┴───┐
+         │ VM2:  │
+         │Ubuntu │ ── 拉数据 → Qwen2.5-3B分析 → Gradio Web(:7871)
+         └───────┘
 ```
 
-## 三、安装说明
-1. 安装依赖: pip install -r requirements.txt
-2. 运行: python app.py
-3. 访问: http://localhost:7871
+## 项目文件
+
+| 文件 | 用途 |
+|---|---|
+| `app.py` | Gradio Web主程序（AI分析引擎+家长看板） |
+| `pve-deploy/pve-create-vms.sh` | PVE宿主机上运行，一键创建两个VM |
+| `pve-deploy/pve-setup-ubuntu.sh` | Ubuntu VM里运行，装AI环境 |
+| `pve-deploy/openwrt-setup.sh` | OpenWrt VM里运行，装nDPI |
+| `deploy.sh` | 单机部署（备用） |
+
+## 硬件需求
+
+- N100双网口软路由（8GB RAM+128GB SSD），淘宝800-1000元
+- U盘一个（8GB+）装PVE安装盘
+
+## 快速开始
+
+详见 [pve-deploy/README.md](pve-deploy/README.md)
